@@ -12,8 +12,6 @@ enum class ControllerButton {
     SELECT,
     LB,
     RB,
-    LT,
-    RT,
     LS,
     RS
 }
