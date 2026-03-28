@@ -16,11 +16,19 @@ enum class ControllerButton {
     RS
 }
 
+enum class ControllerAxis {
+    X,
+    Y,
+    RX,
+    RY
+}
+
 val BUTTON_COUNT = ControllerButton.entries.size
 
 data class ControllerState(
     val incremental: UInt,
     val buttons: BitSet = BitSet(BUTTON_COUNT),
+    val axes: ShortArray = ShortArray(4),
 ) {
 
     fun withSetBtn(button: ControllerButton, pressed: Boolean) =
@@ -28,10 +36,37 @@ data class ControllerState(
             incremental + 1u,
             (buttons.clone() as BitSet).also { it[button.ordinal] = pressed })
 
+    fun withAxis(axis: ControllerAxis, value: Short) =
+        ControllerState(
+            incremental + 1u,
+            buttons,
+            axes = axes.also { it[axis.ordinal] = value }
+        )
+
     fun serialize(stream: DataOutputStream) {
         stream.writeInt(incremental.toInt())
         stream.writeInt(0) // hash
         buttons.set(17)
         stream.writeShort(buttons.toLongArray()[0].toInt())
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ControllerState
+
+        if (incremental != other.incremental) return false
+        if (buttons != other.buttons) return false
+        if (!axes.contentEquals(other.axes)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = incremental.hashCode()
+        result = 31 * result + buttons.hashCode()
+        result = 31 * result + axes.contentHashCode()
+        return result
     }
 }
