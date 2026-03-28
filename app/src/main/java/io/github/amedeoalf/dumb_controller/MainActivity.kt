@@ -12,9 +12,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val conn = ServerConnection(
             InetSocketAddress(
-                "192.168.143.225", 8081
-                // "192.168.91.68" "10.233.63.68" "192.168.1.181"
-
+                "192.168.188.90", 8081
             )
         )
         setContent {
