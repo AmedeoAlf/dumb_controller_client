@@ -29,19 +29,29 @@ data class ControllerState(
     val incremental: UInt,
     val buttons: BitSet = BitSet(BUTTON_COUNT),
     val axes: ShortArray = ShortArray(4),
+    val lt: Byte = 0,
+    val rt: Byte = 0,
 ) {
 
-    fun withSetBtn(button: ControllerButton, pressed: Boolean) =
-        ControllerState(
-            incremental + 1u,
-            (buttons.clone() as BitSet).also { it[button.ordinal] = pressed })
-
-    fun withAxis(axis: ControllerAxis, value: Short) =
-        ControllerState(
-            incremental + 1u,
-            buttons,
-            axes = axes.also { it[axis.ordinal] = value }
+    fun withSetBtn(button: ControllerButton, pressed: Boolean) = copy(
+            incremental = incremental + 1u,
+            buttons = (buttons.clone() as BitSet).also { it[button.ordinal] = pressed }
         )
+
+    fun withAxis(axis: ControllerAxis, value: Short) = copy(
+        incremental = incremental + 1u,
+        axes = axes.also { it[axis.ordinal] = value }
+    )
+
+    fun withLt(value: Byte) = copy(
+        incremental = incremental + 1u,
+        lt = value
+    )
+
+    fun withRt(value: Byte) = copy(
+        incremental = incremental + 1u,
+        rt = value
+    )
 
     fun serialize(stream: DataOutputStream) {
         stream.writeInt(incremental.toInt())
