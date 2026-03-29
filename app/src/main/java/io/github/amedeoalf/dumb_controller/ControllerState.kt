@@ -24,6 +24,7 @@ enum class ControllerAxis {
 }
 
 val BUTTON_COUNT = ControllerButton.entries.size
+val AXIS_COUNT = ControllerAxis.entries.size
 
 data class ControllerState(
     val incremental: UInt,
@@ -34,9 +35,9 @@ data class ControllerState(
 ) {
 
     fun withSetBtn(button: ControllerButton, pressed: Boolean) = copy(
-            incremental = incremental + 1u,
-            buttons = (buttons.clone() as BitSet).also { it[button.ordinal] = pressed }
-        )
+        incremental = incremental + 1u,
+        buttons = (buttons.clone() as BitSet).also { it[button.ordinal] = pressed }
+    )
 
     fun withAxis(axis: ControllerAxis, value: Short) = copy(
         incremental = incremental + 1u,
@@ -59,6 +60,15 @@ data class ControllerState(
 
         buttons.set(17) // makes sure to pad correctly to a short
         stream.writeShort(buttons.toLongArray()[0].toInt())
+
+        for (i in 0..<AXIS_COUNT) {
+            stream.writeShort(axes[i].toInt())
+        }
+
+        stream.writeByte(lt.toInt())
+        stream.writeByte(rt.toInt())
+
+        stream.writeByte(0x0) // TODO: Hat
     }
 
     override fun equals(other: Any?): Boolean {
