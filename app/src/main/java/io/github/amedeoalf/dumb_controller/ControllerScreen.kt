@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,9 +31,10 @@ fun ControllerScreen(conn: ServerConnection? = null) {
                 modifier = Modifier
                     .fillMaxSize()
                     .safeContentPadding(),
-                verticalArrangement = Arrangement.Top
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Top)
             ) {
-                ControllerButton.entries.map { btn ->
+                ControllerButton.entries.forEach { btn ->
                     item {
                         Box(
                             Modifier
@@ -58,7 +60,7 @@ fun ControllerScreen(conn: ServerConnection? = null) {
                                 .background(MaterialTheme.colorScheme.primaryContainer)
                                 .size(70.dp)
                         ) {
-                            Text(btn.name)
+                            Text(btn.name, Modifier.align(Alignment.Center))
                         }
                     }
                 }
