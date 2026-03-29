@@ -54,7 +54,7 @@ fun ControllerScreen(
                     }) { Text("Connetti") }
                 }
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
+                    columns = GridCells.Adaptive(80.dp),
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Top)
                 ) {
