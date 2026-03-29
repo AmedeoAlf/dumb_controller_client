@@ -56,7 +56,8 @@ data class ControllerState(
     fun serialize(stream: DataOutputStream) {
         stream.writeInt(incremental.toInt())
         stream.writeInt(0) // hash
-        buttons.set(17)
+
+        buttons.set(17) // makes sure to pad correctly to a short
         stream.writeShort(buttons.toLongArray()[0].toInt())
     }
 
