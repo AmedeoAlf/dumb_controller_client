@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -45,6 +46,9 @@ class ServerConnection(val server: InetSocketAddress) {
             }
         }
     }
+
+    suspend fun mutateState(mutate: ControllerState.() -> ControllerState) =
+        state.emit(state.first().mutate())
 
     fun sendState(state: ControllerState) {
         ByteArrayOutputStream().use {
