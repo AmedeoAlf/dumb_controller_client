@@ -25,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
-import kotlinx.coroutines.flow.first
 
 @Preview
 @Preview(device = Devices.DESKTOP)
@@ -38,7 +37,9 @@ fun ControllerScreen(
     DumbControllerTheme {
         Surface {
             Column(
-                Modifier.fillMaxSize().safeContentPadding(),
+                Modifier
+                    .fillMaxSize()
+                    .safeContentPadding(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(
@@ -60,37 +61,50 @@ fun ControllerScreen(
                 ) {
                     ControllerButton.entries.forEach { btn ->
                         item {
-                            Box(
-                                Modifier
-                                    .pointerInput(Unit) {
-                                        if (conn == null) return@pointerInput
-                                        detectTapGestures(onPress = {
-                                            try {
-                                                val last = conn.state.first()
-                                                conn.state.emit(
-                                                    last.withSetBtn(btn, true)
-                                                )
-                                                awaitRelease()
-                                                conn.state.emit(
-                                                    conn.state.first().withSetBtn(btn, false)
-                                                )
-                                            } finally {
-                                                conn.state.emit(
-                                                    conn.state.first().withSetBtn(btn, false)
-                                                )
-                                            }
-                                        })
-                                    }
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .size(70.dp)
-                            ) {
-                                Text(btn.name, Modifier.align(Alignment.Center))
+                            ButtonElement(btn.name) {
+                                conn?.mutateState { withSetBtn(btn, it) }
                             }
                         }
                     }
-
+                    item {
+                        ButtonElement("LT") {
+                            conn?.mutateState { withLt((if (it) 255 else 0).toByte()) }
+                        }
+                    }
+                    item {
+                        ButtonElement("RT") {
+                            conn?.mutateState { withRt((if (it) 255 else 0).toByte()) }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ButtonElement(
+    name: String,
+    onAction: suspend (press: Boolean) -> Unit
+) {
+    Box(
+        Modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        try {
+                            onAction(true)
+                            awaitRelease()
+                            onAction(false)
+                        } finally {
+                            onAction(false)
+                        }
+                    }
+                )
+            }
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .size(70.dp)
+    ) {
+        Text(name, Modifier.align(Alignment.Center))
     }
 }
