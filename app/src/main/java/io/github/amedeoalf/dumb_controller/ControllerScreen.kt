@@ -1,6 +1,7 @@
 package io.github.amedeoalf.dumb_controller
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
@@ -76,6 +78,16 @@ fun ControllerScreen(
                             conn?.mutateState { withRt((if (it) 255 else 0).toByte()) }
                         }
                     }
+                    item(span = { GridItemSpan(2) }) {
+                        Stick("L") { x, y ->
+                            fun Float.asShort() = ((this - 0.5) * 0xFFFF).toInt().toShort()
+
+                            conn?.mutateState {
+                                withAxis(ControllerAxis.X, x.asShort())
+                                withAxis(ControllerAxis.Y, y.asShort())
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -106,5 +118,34 @@ fun ButtonElement(
             .size(70.dp)
     ) {
         Text(name, Modifier.align(Alignment.Center))
+    }
+}
+
+@Composable
+fun Stick(
+    name: String,
+    onDrag: (Float, Float) -> Unit
+) {
+    Box(Modifier.size(150.dp)) {
+        Box(
+            Modifier
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragEnd = { onDrag(0.5f, 0.5f) },
+                        onDragCancel = { onDrag(0.5f, 0.5f) }
+                    ) { change, _ ->
+                        fun Float.normalize() = Math.clamp(this / 150, 0f, 1f)
+                        onDrag(
+                            change.position.x.normalize(),
+                            change.position.y.normalize()
+                        )
+                    }
+                }
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .size(150.dp)
+                .align(Alignment.Center)
+        ) {
+            Text(name, Modifier.align(Alignment.Center))
+        }
     }
 }
