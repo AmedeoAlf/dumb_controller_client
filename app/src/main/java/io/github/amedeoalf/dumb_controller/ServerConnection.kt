@@ -5,10 +5,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
@@ -22,15 +18,13 @@ class ServerConnection(val server: InetSocketAddress) {
 
     val sock = DatagramSocket()
     var controllerId = MutableSharedFlow<Int>(1, 0, BufferOverflow.DROP_OLDEST)
-    val state = MutableSharedFlow<ControllerState>(1, 0, BufferOverflow.DROP_OLDEST)
+    var state = ControllerState(0u)
+        set(value) {
+            CoroutineScope(Dispatchers.IO).launch { sendState(value) }
+            field = value
+        }
 
     init {
-        state.tryEmit(ControllerState(0u))
-        state.onEach {
-            println(it)
-            sendState(it)
-        }.launchIn(CoroutineScope(Dispatchers.IO))
-
         CoroutineScope(Dispatchers.IO).launch {
             delay(300)
             makeControllerIdRequest()
@@ -40,15 +34,16 @@ class ServerConnection(val server: InetSocketAddress) {
             while (true) {
                 sock.receive(datagramPacket)
                 when (buffer[0].toInt()) {
-                    INPUT_PACKET -> sendState(state.last())
+                    INPUT_PACKET -> sendState(state)
                     PLAYER_NUM_PACKET -> controllerId.emit(buffer[1].toInt() shl 8 or buffer[0].toInt())
                 }
             }
         }
     }
 
-    suspend fun mutateState(mutate: ControllerState.() -> ControllerState) =
-        state.emit(state.first().mutate())
+    fun mutateState(mutate: ControllerState.() -> ControllerState) {
+        state = state.mutate()
+    }
 
     fun sendState(state: ControllerState) {
         ByteArrayOutputStream().use {
