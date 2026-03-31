@@ -33,8 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
 
-@Preview
-@Preview(device = Devices.DESKTOP)
+@Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape")
 @Composable
 fun ControllerScreen(
     conn: ServerConnection? = null,
