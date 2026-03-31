@@ -1,5 +1,6 @@
 package io.github.amedeoalf.dumb_controller
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -33,33 +34,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
 
-@Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape")
+@Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", showSystemUi = true)
+@Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun ControllerScreen(
     conn: ServerConnection? = null,
     connectTo: ((String) -> Unit)? = null
 ) {
-    val textFieldState = rememberTextFieldState(conn?.server?.hostString ?: "192.168.1.1")
     DumbControllerTheme {
         Surface {
             Column(
                 Modifier
                     .fillMaxSize()
                     .safeContentPadding(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    TextField(
-                        textFieldState,
-                        label = { Text("Indirizzo del server") }
-                    )
-                    Button({
-                        connectTo?.invoke(textFieldState.text.toString())
-                    }) { Text("Connetti") }
-                }
+                ServerConnectWidget(conn, connectTo)
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(80.dp),
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -154,5 +145,22 @@ fun Stick(
         ) {
             Text(name, Modifier.align(Alignment.Center))
         }
+    }
+}
+
+@Composable
+fun ServerConnectWidget(conn: ServerConnection?, connectTo: ((String) -> Unit)?) {
+    val textFieldState = rememberTextFieldState(conn?.server?.hostString ?: "192.168.1.1")
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        TextField(
+            textFieldState,
+            label = { Text("Indirizzo del server") }
+        )
+        Button({
+            connectTo?.invoke(textFieldState.text.toString())
+        }) { Text("Connetti") }
     }
 }
