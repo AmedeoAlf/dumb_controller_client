@@ -48,38 +48,27 @@ val BUTTON_COUNT = ControllerButton.entries.size
 val AXIS_COUNT = ControllerAxis.entries.size
 
 data class ControllerState(
-    val incremental: UInt,
-    val buttons: BitSet = BitSet(BUTTON_COUNT),
-    val axes: ShortArray = ShortArray(4),
-    val lt: Byte = 0,
-    val rt: Byte = 0,
-    val hatValue: HatValue = HatValue.MID
+    var buttons: BitSet = BitSet(BUTTON_COUNT),
+    var axes: ShortArray = ShortArray(4),
+    var lt: Byte = 0,
+    var rt: Byte = 0,
+    var hatValue: HatValue = HatValue.MID
 ) {
+    var incremental: UInt = 0u
+        private set
 
-    fun withSetBtn(button: ControllerButton, pressed: Boolean) = copy(
-        incremental = incremental + 1u,
-        buttons = (buttons.clone() as BitSet).also { it[button.ordinal] = pressed }
-    )
+    fun setButton(button: ControllerButton, pressed: Boolean) {
+        buttons[button.ordinal] = pressed
+    }
 
-    fun withAxis(axis: ControllerAxis, value: Short) = copy(
-        incremental = incremental + 1u,
-        axes = axes.also { it[axis.ordinal] = value }
-    )
+    fun setAxis(axis: ControllerAxis, value: Short) {
+        axes[axis.ordinal] = value
+    }
 
-    fun withLt(value: Byte) = copy(
-        incremental = incremental + 1u,
-        lt = value
-    )
 
-    fun withRt(value: Byte) = copy(
-        incremental = incremental + 1u,
-        rt = value
-    )
-
-    fun withHat(hat: HatValue) = copy(
-        incremental = incremental + 1u,
-        hatValue = hat
-    )
+    fun newSnapshot() {
+        incremental += 1u
+    }
 
     fun serialize(stream: DataOutputStream) {
         stream.writeInt(incremental.toInt())

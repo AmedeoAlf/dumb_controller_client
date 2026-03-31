@@ -64,18 +64,18 @@ fun ControllerScreen(
                     ControllerButton.entries.forEach { btn ->
                         item {
                             ButtonElement(btn.name) {
-                                conn?.mutateState { withSetBtn(btn, it) }
+                                conn?.mutateState { setButton(btn, it) }
                             }
                         }
                     }
                     item {
                         ButtonElement("LT") {
-                            conn?.mutateState { withLt((if (it) 255 else 0).toByte()) }
+                            conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
                         }
                     }
                     item {
                         ButtonElement("RT") {
-                            conn?.mutateState { withRt((if (it) 255 else 0).toByte()) }
+                            conn?.mutateState { rt = (if (it) 255 else 0).toByte() }
                         }
                     }
                     item(span = { GridItemSpan(2) }) {
@@ -83,8 +83,8 @@ fun ControllerScreen(
                             fun Float.asShort() = ((this - 0.5) * 0xFFFF).toInt().toShort()
 
                             conn?.mutateState {
-                                withAxis(ControllerAxis.X, x.asShort())
-                                withAxis(ControllerAxis.Y, y.asShort())
+                                setAxis(ControllerAxis.X, x.asShort())
+                                setAxis(ControllerAxis.Y, y.asShort())
                             }
                         }
                     }

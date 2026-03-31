@@ -18,7 +18,7 @@ class ServerConnection(val server: InetSocketAddress) {
 
     val sock = DatagramSocket()
     var controllerId = MutableSharedFlow<Int>(1, 0, BufferOverflow.DROP_OLDEST)
-    var state = ControllerState(0u)
+    var state = ControllerState()
         set(value) {
             CoroutineScope(Dispatchers.IO).launch { sendState(value) }
             field = value
@@ -41,8 +41,11 @@ class ServerConnection(val server: InetSocketAddress) {
         }
     }
 
-    fun mutateState(mutate: ControllerState.() -> ControllerState) {
-        state = state.mutate()
+    fun mutateState(mutate: ControllerState.() -> Unit) {
+        state = state.copy().apply {
+            newSnapshot()
+            mutate()
+        }
     }
 
     fun sendState(state: ControllerState) {
