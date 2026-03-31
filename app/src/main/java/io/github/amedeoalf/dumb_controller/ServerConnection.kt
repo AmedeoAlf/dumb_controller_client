@@ -5,6 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
@@ -20,9 +22,11 @@ class ServerConnection(val server: InetSocketAddress) {
     var controllerId = MutableSharedFlow<Int>(1, 0, BufferOverflow.DROP_OLDEST)
     var state = ControllerState()
         set(value) {
-            CoroutineScope(Dispatchers.IO).launch { sendState(value) }
             field = value
+            sendFlow.tryEmit(value)
         }
+
+    private val sendFlow = MutableSharedFlow<ControllerState>(1, 0, BufferOverflow.DROP_OLDEST)
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
@@ -39,6 +43,9 @@ class ServerConnection(val server: InetSocketAddress) {
                 }
             }
         }
+        sendFlow.onEach {
+            sendState(it)
+        }.launchIn(CoroutineScope(Dispatchers.IO))
     }
 
     fun mutateState(mutate: ControllerState.() -> Unit) {

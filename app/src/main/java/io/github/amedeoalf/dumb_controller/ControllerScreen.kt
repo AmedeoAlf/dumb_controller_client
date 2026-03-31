@@ -20,8 +20,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,7 +85,7 @@ fun ControllerScreen(
                     }
                     item(span = { GridItemSpan(2) }) {
                         Stick("L") { x, y ->
-                            fun Float.asShort() = ((this - 0.5) * 0xFFFF).toInt().toShort()
+                            fun Float.asShort() = (this * 0x7FFF).toInt().toShort()
 
                             conn?.mutateState {
                                 setAxis(ControllerAxis.X, x.asShort())
@@ -126,18 +131,21 @@ fun Stick(
     name: String,
     onDrag: (Float, Float) -> Unit
 ) {
+    var dragStart: Offset? by remember { mutableStateOf(null) }
     Box(Modifier.size(150.dp)) {
         Box(
             Modifier
                 .pointerInput(Unit) {
                     detectDragGestures(
-                        onDragEnd = { onDrag(0.5f, 0.5f) },
-                        onDragCancel = { onDrag(0.5f, 0.5f) }
+                        onDragStart = { dragStart = it },
+                        onDragEnd = { onDrag(0f, 0f) },
+                        onDragCancel = { onDrag(0f, 0f) }
                     ) { change, _ ->
-                        fun Float.normalize() = Math.clamp(this / 150, 0f, 1f)
+                        fun Float.normalize() = Math.clamp(this / 150, -1f, 1f)
+                        val moved = change.position - dragStart!!
                         onDrag(
-                            change.position.x.normalize(),
-                            change.position.y.normalize()
+                            moved.x.normalize(),
+                            moved.y.normalize()
                         )
                     }
                 }
