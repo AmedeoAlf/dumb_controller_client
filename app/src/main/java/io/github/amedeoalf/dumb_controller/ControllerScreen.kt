@@ -35,7 +35,11 @@ import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
 
 @Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", showSystemUi = true)
-@Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    name = "Telefono",
+    device = Devices.PHONE + ",orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 fun ControllerScreen(
     conn: ServerConnection? = null,
@@ -162,5 +166,21 @@ fun ServerConnectWidget(conn: ServerConnection?, connectTo: ((String) -> Unit)?)
         Button({
             connectTo?.invoke(textFieldState.text.toString())
         }) { Text("Connetti") }
+    }
+}
+
+@Composable
+fun FaceButtons(conn: ServerConnection?) {
+    ButtonElement("Y") {
+        conn?.mutateState { setButton(ControllerButton.NORTH, it) }
+    }
+    ButtonElement("X") {
+        conn?.mutateState { setButton(ControllerButton.WEST, it) }
+    }
+    ButtonElement("B") {
+        conn?.mutateState { setButton(ControllerButton.EAST, it) }
+    }
+    ButtonElement("A") {
+        conn?.mutateState { setButton(ControllerButton.SOUTH, it) }
     }
 }
