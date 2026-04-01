@@ -80,14 +80,12 @@ fun ControllerScreen(
                             setAxis(ControllerAxis.Y, y.normalize())
                         }
                     }
+                    val modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primaryContainer)
                     LazyHorizontalGrid(
                         rows = GridCells.FixedSize(80.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        val modifier = Modifier
-                            .fillMaxSize()
-                            .aspectRatio(1f)
                         item {
                             ButtonElement("LT", modifier) {
                                 conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
@@ -148,8 +146,6 @@ fun ButtonElement(
                 })
         }
         .aspectRatio(1f)
-        .clip(RoundedCornerShape(20.dp))
-        .background(MaterialTheme.colorScheme.primaryContainer)
         .then(modifier)) {
         Text(name, modifier = Modifier.align(Alignment.Center), color = textColor)
     }
@@ -196,15 +192,24 @@ fun ServerConnectWidget(conn: ServerConnection?, connectTo: ((String) -> Unit)?)
 fun FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifier) {
 
     @Composable
-    fun PrimaryBtn(name: String, btn: ControllerButton) = ButtonElement(name) {
+    fun PrimaryBtn(name: String, btn: ControllerButton) = ButtonElement(
+        name,
+        Modifier
+            .clip(RoundedCornerShape(100))
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
         conn?.mutateState { setButton(btn, it) }
     }
 
     @Composable
     fun SecondaryBtn(btn: ControllerButton) = ButtonElement(
         btn.name,
-        Modifier.padding(10.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface),
-        MaterialTheme.colorScheme.onSurface
+        Modifier
+            .padding(10.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        MaterialTheme.colorScheme.onPrimaryContainer
     ) {
         conn?.mutateState { setButton(btn, it) }
     }
