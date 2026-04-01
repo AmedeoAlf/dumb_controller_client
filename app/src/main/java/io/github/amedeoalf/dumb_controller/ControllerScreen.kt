@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
@@ -32,8 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,8 +63,14 @@ fun ControllerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ServerConnectWidget(conn, connectTo)
-                Row(Modifier.fillMaxWidth()) {
-                    Stick("L") { offset ->
+                Row(
+                    Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Stick(
+                        "L", Modifier
+                            .fillMaxHeight()
+                            .width(200.dp)
+                    ) { offset ->
                         val (x, y) = offset / 100f
                         fun Float.normalize() =
                             (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
@@ -71,11 +80,39 @@ fun ControllerScreen(
                             setAxis(ControllerAxis.Y, y.normalize())
                         }
                     }
-                    ButtonElement("LT") {
-                        conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
-                    }
-                    ButtonElement("RT") {
-                        conn?.mutateState { rt = (if (it) 255 else 0).toByte() }
+                    LazyHorizontalGrid(
+                        rows = GridCells.FixedSize(80.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        val modifier = Modifier
+                            .fillMaxSize()
+                            .aspectRatio(1f)
+                        item {
+                            ButtonElement("LT", modifier) {
+                                conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
+                            }
+                        }
+                        item {
+                            ButtonElement("RT", modifier) {
+                                conn?.mutateState { rt = (if (it) 255 else 0).toByte() }
+                            }
+                        }
+                        for (btn in listOf(
+                            ControllerButton.LB,
+                            ControllerButton.RB,
+                            ControllerButton.LS,
+                            ControllerButton.RS,
+                            ControllerButton.START,
+                            ControllerButton.SELECT
+                        )) item {
+                            ButtonElement(btn.name, modifier) { pressed ->
+                                conn?.mutateState {
+                                    setButton(btn, pressed)
+                                }
+                            }
+                        }
+
                     }
                     Spacer(Modifier.weight(1f))
                     FaceButtons(
@@ -94,9 +131,10 @@ fun ControllerScreen(
 fun ButtonElement(
     name: String,
     modifier: Modifier = Modifier,
+    textColor: Color = Color.Unspecified,
     onAction: suspend (press: Boolean) -> Unit,
 ) {
-    Box(modifier
+    Box(Modifier
         .pointerInput(Unit) {
             detectTapGestures(
                 onPress = {
@@ -109,18 +147,22 @@ fun ButtonElement(
                     }
                 })
         }
-        .clip(RoundedCornerShape(30.dp))
-        .background(MaterialTheme.colorScheme.primaryContainer)) {
-        Text(name, Modifier.align(Alignment.Center))
+        .aspectRatio(1f)
+        .clip(RoundedCornerShape(20.dp))
+        .background(MaterialTheme.colorScheme.primaryContainer)
+        .then(modifier)) {
+        Text(name, modifier = Modifier.align(Alignment.Center), color = textColor)
     }
 }
 
 @Composable
 fun Stick(
-    name: String, onDrag: (Offset) -> Unit
+    name: String,
+    modifier: Modifier = Modifier,
+    onDrag: (Offset) -> Unit,
 ) {
     var dragStart: Offset? by remember { mutableStateOf(null) }
-    Box(Modifier
+    Box(modifier
         .pointerInput(Unit) {
             detectDragGestures(
                 onDragStart = { dragStart = it },
@@ -129,8 +171,8 @@ fun Stick(
                 onDrag(change.position - (dragStart ?: Offset.Zero))
             }
         }
-        .background(MaterialTheme.colorScheme.primaryContainer)
-        .size(150.dp)) {
+        .clip(RoundedCornerShape(10.dp))
+        .background(MaterialTheme.colorScheme.secondaryContainer)) {
         Text(name, Modifier.align(Alignment.Center))
     }
 }
@@ -152,38 +194,45 @@ fun ServerConnectWidget(conn: ServerConnection?, connectTo: ((String) -> Unit)?)
 
 @Composable
 fun FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifier) {
-    val oneThird = 1f / 3
-    fun placedAt(x: Float, y: Float) =
-        Modifier.then(Modifier
-            .layout { measurable, constraints ->
-                val placeable = measurable.measure(constraints)
-                layout(placeable.width, placeable.height) {
-                    placeable.placeRelative(
-                        x = (constraints.maxWidth * x).toInt(),
-                        y = (constraints.maxHeight * y).toInt()
-                    )
+
+    @Composable
+    fun PrimaryBtn(name: String, btn: ControllerButton) = ButtonElement(name) {
+        conn?.mutateState { setButton(btn, it) }
+    }
+
+    @Composable
+    fun SecondaryBtn(btn: ControllerButton) = ButtonElement(
+        btn.name,
+        Modifier.padding(10.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface),
+        MaterialTheme.colorScheme.onSurface
+    ) {
+        conn?.mutateState { setButton(btn, it) }
+    }
+
+    LazyHorizontalGrid(
+        rows = GridCells.Fixed(3),
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        item { SecondaryBtn(ControllerButton.LB) }
+        item { PrimaryBtn("X", ControllerButton.WEST) }
+        item { SecondaryBtn(ControllerButton.LS) }
+        item { PrimaryBtn("Y", ControllerButton.NORTH) }
+        item {
+            Stick("R", Modifier.aspectRatio(1f)) {
+                val (x, y) = it / 100f
+                fun Float.normalize() = (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
+
+                conn?.mutateState {
+                    setAxis(ControllerAxis.RX, x.normalize())
+                    setAxis(ControllerAxis.RY, y.normalize())
                 }
             }
-            .fillMaxSize(oneThird))
-
-    Box(modifier) {
-        ButtonElement("Y", placedAt(oneThird, 0f)) {
-            conn?.mutateState { setButton(ControllerButton.NORTH, it) }
         }
-        ButtonElement(
-            "X", placedAt(0f, oneThird)
-        ) {
-            conn?.mutateState { setButton(ControllerButton.WEST, it) }
-        }
-        ButtonElement(
-            "B", placedAt(2 * oneThird, oneThird)
-        ) {
-            conn?.mutateState { setButton(ControllerButton.EAST, it) }
-        }
-        ButtonElement(
-            "A", placedAt(oneThird, oneThird * 2)
-        ) {
-            conn?.mutateState { setButton(ControllerButton.SOUTH, it) }
-        }
+        item { PrimaryBtn("A", ControllerButton.SOUTH) }
+        item { SecondaryBtn(ControllerButton.RB) }
+        item { PrimaryBtn("B", ControllerButton.EAST) }
+        item { SecondaryBtn(ControllerButton.RS) }
     }
 }
