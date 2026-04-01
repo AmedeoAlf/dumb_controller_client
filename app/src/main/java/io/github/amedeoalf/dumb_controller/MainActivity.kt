@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(
                     ServerConnection(
                         InetSocketAddress(
-                            "192.168.188.90", 8081
+                            "192.168.188.26", 8081
                         )
                     )
                 )

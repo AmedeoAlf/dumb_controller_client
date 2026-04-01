@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,10 +39,11 @@ import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
 
 @Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", showSystemUi = true)
 @Preview(
-    name = "Telefono",
+    name = "Telefono dark",
     device = Devices.PHONE + ",orientation=landscape",
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )
+@Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
 fun ControllerScreen(
     conn: ServerConnection? = null,
@@ -55,38 +59,29 @@ fun ControllerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ServerConnectWidget(conn, connectTo)
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(80.dp),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.Top)
-                ) {
-                    ControllerButton.entries.forEach { btn ->
-                        item {
-                            ButtonElement(btn.name) {
-                                conn?.mutateState { setButton(btn, it) }
-                            }
-                        }
-                    }
-                    item {
-                        ButtonElement("LT") {
-                            conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
-                        }
-                    }
-                    item {
-                        ButtonElement("RT") {
-                            conn?.mutateState { rt = (if (it) 255 else 0).toByte() }
-                        }
-                    }
-                    item(span = { GridItemSpan(2) }) {
-                        Stick("L") { x, y ->
-                            fun Float.asShort() = (this * 0x7FFF).toInt().toShort()
+                Row(Modifier.fillMaxWidth()) {
+                    Stick("L") { x, y ->
+                        fun Float.asShort() = (this * 0x7FFF).toInt().toShort()
 
-                            conn?.mutateState {
-                                setAxis(ControllerAxis.X, x.asShort())
-                                setAxis(ControllerAxis.Y, y.asShort())
-                            }
+                        conn?.mutateState {
+                            setAxis(ControllerAxis.X, x.asShort())
+                            setAxis(ControllerAxis.Y, y.asShort())
                         }
                     }
+                    ButtonElement("LT") {
+                        conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
+                    }
+                    ButtonElement("RT") {
+                        conn?.mutateState { rt = (if (it) 255 else 0).toByte() }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    FaceButtons(
+                        conn,
+                        Modifier
+                            .heightIn(max = 300.dp)
+                            .fillMaxHeight()
+                            .aspectRatio(1f)
+                    )
                 }
             }
         }
@@ -96,10 +91,11 @@ fun ControllerScreen(
 @Composable
 fun ButtonElement(
     name: String,
-    onAction: suspend (press: Boolean) -> Unit
+    modifier: Modifier = Modifier,
+    onAction: suspend (press: Boolean) -> Unit,
 ) {
     Box(
-        Modifier
+        modifier
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
@@ -114,7 +110,6 @@ fun ButtonElement(
                 )
             }
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .size(70.dp)
     ) {
         Text(name, Modifier.align(Alignment.Center))
     }
@@ -169,18 +164,49 @@ fun ServerConnectWidget(conn: ServerConnection?, connectTo: ((String) -> Unit)?)
     }
 }
 
+fun Modifier.offsetByPercent(x: Float, y: Float) = this.then(
+    Modifier.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, placeable.height) {
+            placeable.placeRelative(
+                x = (constraints.maxWidth * x).toInt(),
+                y = (constraints.maxHeight * y).toInt()
+            )
+        }
+    }
+)
+
 @Composable
-fun FaceButtons(conn: ServerConnection?) {
-    ButtonElement("Y") {
-        conn?.mutateState { setButton(ControllerButton.NORTH, it) }
-    }
-    ButtonElement("X") {
-        conn?.mutateState { setButton(ControllerButton.WEST, it) }
-    }
-    ButtonElement("B") {
-        conn?.mutateState { setButton(ControllerButton.EAST, it) }
-    }
-    ButtonElement("A") {
-        conn?.mutateState { setButton(ControllerButton.SOUTH, it) }
+fun FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifier) {
+    val oneThird = 1f / 3
+    Box(modifier) {
+        ButtonElement(
+            "Y", Modifier
+                .offsetByPercent(oneThird, 0f)
+                .fillMaxSize(oneThird)
+        ) {
+            conn?.mutateState { setButton(ControllerButton.NORTH, it) }
+        }
+        ButtonElement(
+            "X", Modifier
+                .offsetByPercent(0f, oneThird)
+                .fillMaxSize(oneThird)
+        ) {
+            conn?.mutateState { setButton(ControllerButton.WEST, it) }
+        }
+        ButtonElement(
+            "B", Modifier
+                .offsetByPercent(2 * oneThird, oneThird)
+                .fillMaxSize(oneThird)
+        ) {
+            conn?.mutateState { setButton(ControllerButton.EAST, it) }
+        }
+        ButtonElement(
+            "A", Modifier
+                .offsetByPercent(oneThird, oneThird * 2)
+                .fillMaxSize(oneThird)
+        ) {
+            conn?.mutateState { setButton(ControllerButton.SOUTH, it) }
+        }
     }
 }
