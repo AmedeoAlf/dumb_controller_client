@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
@@ -130,6 +132,7 @@ fun ControllerScreen(
                         }
 
                     }
+                    Dpad(conn, Modifier.widthIn(max = 10.dp))
                     Spacer(Modifier.weight(1f))
                     RightSide(
                         conn, Modifier
@@ -150,36 +153,37 @@ fun StickScope.DraggableButton(
     onAction: (press: Boolean) -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    Box(Modifier
-        .aspectRatio(1f)
-        .then(modifier)
-        .pointerInput(Unit) {
-            detectTapGestures(
-                onPress = {
-                    try {
-                        onAction(true)
-                        awaitRelease()
-                        onAction(false)
-                    } catch (_: GestureCancellationException) {
-                        // It is fine, the user likely started a drag
-                    }
-                })
-        }
-        .pointerInput(Unit) {
-            detectDragGestures(onDragStart = {
-                dragStart.value = it
-            }, onDragEnd = {
-                onDrag(Offset.Zero)
-                onAction(false)
-            }, onDragCancel = {
-                onDrag(Offset.Zero)
-                onAction(false)
-            }) { change, _ ->
-                val diff = change.position - (dragStart.value ?: Offset.Zero)
-                if (diff.x > 10 || diff.y > 10) onDrag(diff)
+    Box(
+        Modifier
+            .aspectRatio(1f)
+            .then(modifier)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        try {
+                            onAction(true)
+                            awaitRelease()
+                            onAction(false)
+                        } catch (_: GestureCancellationException) {
+                            // It is fine, the user likely started a drag
+                        }
+                    })
             }
-        }
-        .indication(interactionSource, ripple())) {
+            .pointerInput(Unit) {
+                detectDragGestures(onDragStart = {
+                    dragStart.value = it
+                }, onDragEnd = {
+                    onDrag(Offset.Zero)
+                    onAction(false)
+                }, onDragCancel = {
+                    onDrag(Offset.Zero)
+                    onAction(false)
+                }) { change, _ ->
+                    val diff = change.position - (dragStart.value ?: Offset.Zero)
+                    if (diff.x > 10 || diff.y > 10) onDrag(diff)
+                }
+            }
+            .indication(interactionSource, ripple())) {
         Text(name, modifier = Modifier.align(Alignment.Center), color = textColor)
     }
 }
@@ -222,18 +226,19 @@ fun Stick(
     content: @Composable StickScope.() -> Unit
 ) {
     val dragStart = remember { mutableStateOf<Offset?>(null) }
-    Box(Modifier
-        .pointerInput(Unit) {
-            detectDragGestures(
-                onDragStart = { dragStart.value = it },
-                onDragEnd = { onDrag(Offset.Zero) },
-                onDragCancel = { onDrag(Offset.Zero) }) { change, _ ->
-                onDrag(change.position - (dragStart.value ?: Offset.Zero))
+    Box(
+        Modifier
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { dragStart.value = it },
+                    onDragEnd = { onDrag(Offset.Zero) },
+                    onDragCancel = { onDrag(Offset.Zero) }) { change, _ ->
+                    onDrag(change.position - (dragStart.value ?: Offset.Zero))
+                }
             }
-        }
-        .clip(RoundedCornerShape(10.dp))
-        .background(MaterialTheme.colorScheme.surfaceBright)
-        .then(modifier), contentAlignment = Alignment.TopEnd) {
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceBright)
+            .then(modifier), contentAlignment = Alignment.TopEnd) {
         StickScope(onDrag, dragStart).content()
     }
 }
@@ -318,5 +323,17 @@ fun RightSide(conn: ServerConnection?, modifier: Modifier = Modifier) {
         }
     }) {
         FaceButtons(conn, Modifier.heightIn(max = 300.dp))
+    }
+}
+
+@Composable
+fun Dpad(conn: ServerConnection?, modifier: Modifier = Modifier) {
+    LazyVerticalGrid(
+        GridCells.Fixed(3),
+        modifier = modifier
+    ) {
+        item { }
+        item { }
+        item { }
     }
 }
