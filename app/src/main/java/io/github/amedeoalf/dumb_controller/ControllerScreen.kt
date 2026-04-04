@@ -58,7 +58,7 @@ fun ControllerScreen(
     conn: ServerConnection? = null, connectTo: ((String) -> Unit)? = null
 ) {
     DumbControllerTheme {
-        Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
             Column(
                 Modifier
                     .fillMaxSize()
@@ -87,9 +87,17 @@ fun ControllerScreen(
 
                     }
 
-                    val modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                    @Composable
+                    fun Button(name: String, onAction: suspend (press: Boolean) -> Unit) =
+                        ButtonElement(
+                            name,
+                            Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.secondary),
+                            MaterialTheme.colorScheme.onSecondary,
+                            onAction
+                        )
+
                     LazyHorizontalGrid(
                         rows = GridCells.FixedSize(80.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -97,12 +105,12 @@ fun ControllerScreen(
                         userScrollEnabled = false
                     ) {
                         item {
-                            ButtonElement("LT", modifier) {
+                            Button("LT") {
                                 conn?.mutateState { lt = (if (it) 255 else 0).toByte() }
                             }
                         }
                         item {
-                            ButtonElement("RT", modifier) {
+                            Button("RT") {
                                 conn?.mutateState { rt = (if (it) 255 else 0).toByte() }
                             }
                         }
@@ -114,7 +122,7 @@ fun ControllerScreen(
                             ControllerButton.START,
                             ControllerButton.SELECT
                         )) item {
-                            ButtonElement(btn.name, modifier) { pressed ->
+                            Button(btn.name) { pressed ->
                                 conn?.mutateState {
                                     setButton(btn, pressed)
                                 }
@@ -142,37 +150,36 @@ fun StickScope.DraggableButton(
     onAction: (press: Boolean) -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    Box(
-        Modifier
-            .aspectRatio(1f)
-            .then(modifier)
-            .indication(interactionSource, ripple())
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        try {
-                            onAction(true)
-                            awaitRelease()
-                            onAction(false)
-                        } catch (_: GestureCancellationException) {
-                            // It is fine, the user likely started a drag
-                        }
-                    })
+    Box(Modifier
+        .aspectRatio(1f)
+        .then(modifier)
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    try {
+                        onAction(true)
+                        awaitRelease()
+                        onAction(false)
+                    } catch (_: GestureCancellationException) {
+                        // It is fine, the user likely started a drag
+                    }
+                })
+        }
+        .pointerInput(Unit) {
+            detectDragGestures(onDragStart = {
+                dragStart.value = it
+            }, onDragEnd = {
+                onDrag(Offset.Zero)
+                onAction(false)
+            }, onDragCancel = {
+                onDrag(Offset.Zero)
+                onAction(false)
+            }) { change, _ ->
+                val diff = change.position - (dragStart.value ?: Offset.Zero)
+                if (diff.x > 10 || diff.y > 10) onDrag(diff)
             }
-            .pointerInput(Unit) {
-                detectDragGestures(onDragStart = {
-                    dragStart.value = it
-                }, onDragEnd = {
-                    onDrag(Offset.Zero)
-                    onAction(false)
-                }, onDragCancel = {
-                    onDrag(Offset.Zero)
-                    onAction(false)
-                }) { change, _ ->
-                    val diff = change.position - (dragStart.value ?: Offset.Zero)
-                    if (diff.x > 10 || diff.y > 10) onDrag(diff)
-                }
-            }) {
+        }
+        .indication(interactionSource, ripple())) {
         Text(name, modifier = Modifier.align(Alignment.Center), color = textColor)
     }
 }
@@ -188,8 +195,8 @@ fun ButtonElement(
     Box(
         Modifier
             .aspectRatio(1f)
-            .then(modifier)
             .indication(interactionSource, ripple())
+            .then(modifier)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
@@ -257,8 +264,8 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
         name,
         Modifier
             .clip(RoundedCornerShape(100))
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        MaterialTheme.colorScheme.onPrimaryContainer
+            .background(MaterialTheme.colorScheme.primary),
+        MaterialTheme.colorScheme.onPrimary
     ) {
         conn?.mutateState { setButton(btn, it) }
     }
@@ -269,8 +276,8 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
         Modifier
             .padding(10.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        MaterialTheme.colorScheme.onPrimaryContainer
+            .background(MaterialTheme.colorScheme.secondary),
+        MaterialTheme.colorScheme.onSecondary
     ) {
         conn?.mutateState { setButton(btn, it) }
     }
