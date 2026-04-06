@@ -26,9 +26,9 @@ enum class ControllerAxis {
 @JvmInline
 value class HatValue(val serialValue: Int) {
     constructor(x: Int, y: Int) : this(
-        (if (x == -1) 0xf else x)
-                shl 4
-                or (if (y == -1) 0xf else y)
+        (if (x == -1) 0b11 else x)
+                shl 2
+                or (if (y == -1) 0b11 else y)
     )
 
     companion object {
@@ -41,6 +41,19 @@ value class HatValue(val serialValue: Int) {
         val BOT = HatValue(0, 1)
         val BOTL = HatValue(-1, 1)
         val BOTR = HatValue(1, 1)
+
+        fun nameOf(hatValue: HatValue) = when (hatValue) {
+            MID -> "MID"
+            MIDL -> "MIDL"
+            MIDR -> "MIDR"
+            TOP -> "TOP"
+            TOPL -> "TOPL"
+            TOPR -> "TOPR"
+            BOT -> "BOT"
+            BOTL -> "BOTL"
+            BOTR -> "BOTR"
+            else -> "NONE"
+        }
     }
 }
 
