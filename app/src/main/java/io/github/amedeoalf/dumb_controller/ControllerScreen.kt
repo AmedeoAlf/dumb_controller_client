@@ -20,10 +20,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
@@ -35,8 +33,10 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -130,9 +130,27 @@ fun ControllerScreen(
                                 }
                             }
                         }
+                        item {
+                            var lastDpad by remember { mutableStateOf(HatValue.MID) }
+                            Stick(
+                                {
+                                    if (conn == null) return@Stick
+                                    fun Float.toSign() =
+                                        if (this < -100) -1 else if (this > 100) 1 else 0
 
+                                    val currDpad = HatValue(it.x.toSign(), it.y.toSign())
+                                    if (currDpad != lastDpad) {
+                                        lastDpad = currDpad
+                                        conn.mutateState { hatValue = currDpad }
+                                    }
+                                }, Modifier.aspectRatio(1f)
+                            ) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text(lastDpad.name)
+                                }
+                            }
+                        }
                     }
-                    Dpad(conn, Modifier.widthIn(max = 10.dp))
                     Spacer(Modifier.weight(1f))
                     RightSide(
                         conn, Modifier
@@ -323,17 +341,5 @@ fun RightSide(conn: ServerConnection?, modifier: Modifier = Modifier) {
         }
     }) {
         FaceButtons(conn, Modifier.heightIn(max = 300.dp))
-    }
-}
-
-@Composable
-fun Dpad(conn: ServerConnection?, modifier: Modifier = Modifier) {
-    LazyVerticalGrid(
-        GridCells.Fixed(3),
-        modifier = modifier
-    ) {
-        item { }
-        item { }
-        item { }
     }
 }
