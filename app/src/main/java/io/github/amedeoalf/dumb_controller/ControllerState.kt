@@ -41,8 +41,10 @@ value class HatValue(val serialValue: Int) {
         val BOT = HatValue(0, 1)
         val BOTL = HatValue(-1, 1)
         val BOTR = HatValue(1, 1)
+    }
 
-        fun nameOf(hatValue: HatValue) = when (hatValue) {
+    val name: String
+        get() = when (this) {
             MID -> "MID"
             MIDL -> "MIDL"
             MIDR -> "MIDR"
@@ -54,7 +56,6 @@ value class HatValue(val serialValue: Int) {
             BOTR -> "BOTR"
             else -> "NONE"
         }
-    }
 }
 
 val BUTTON_COUNT = ControllerButton.entries.size
