@@ -26,9 +26,9 @@ enum class ControllerAxis {
 @JvmInline
 value class HatValue(val serialValue: Int) {
     constructor(x: Int, y: Int) : this(
-        (if (x == -1) 0b11 else x)
+        (if (y == -1) 0b11 else y)
                 shl 2
-                or (if (y == -1) 0b11 else y)
+                or (if (x == -1) 0b11 else x)
     )
 
     companion object {
