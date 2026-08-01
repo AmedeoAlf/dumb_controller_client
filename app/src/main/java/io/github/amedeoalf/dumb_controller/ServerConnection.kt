@@ -13,6 +13,7 @@ import java.io.DataOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import kotlin.time.Duration.Companion.milliseconds
 
 class ServerConnection(val server: InetSocketAddress) {
     val INPUT_PACKET = 0
@@ -30,7 +31,7 @@ class ServerConnection(val server: InetSocketAddress) {
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            delay(300)
+            delay(300.milliseconds)
             makeControllerIdRequest()
 
             val buffer = ByteArray(3)
