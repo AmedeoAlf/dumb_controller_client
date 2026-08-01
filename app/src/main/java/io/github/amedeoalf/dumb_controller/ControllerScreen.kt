@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,6 +60,7 @@ import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
 fun ControllerScreen(
     conn: ServerConnection? = null, connectTo: ((String) -> Unit)? = null
 ) {
+    val trackpadMode = remember { mutableStateOf(false) }
     DumbControllerTheme {
         Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
             Column(
@@ -68,26 +70,16 @@ fun ControllerScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ServerConnectCard(conn, connectTo)
                 Row(
                     Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Stick(
-                        onDrag = { offset ->
-                            val (x, y) = offset / 100f
-                            fun Float.normalize() =
-                                (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
-
-                            conn?.mutateState {
-                                setAxis(ControllerAxis.X, x.normalize())
-                                setAxis(ControllerAxis.Y, y.normalize())
-                            }
-                        }, modifier = Modifier
-                            .fillMaxHeight()
-                            .width(200.dp)
-                    ) {
-
-                    }
+                    ServerConnectCard(conn, connectTo)
+                    TrackpadModeToggle(trackpadMode)
+                }
+                Row(
+                    Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    LeftStick(conn)
 
                     @Composable
                     fun Button(name: String, onAction: suspend (press: Boolean) -> Unit) =
@@ -162,6 +154,27 @@ fun ControllerScreen(
         }
     }
 }
+
+@Composable
+fun LeftStick(conn: ServerConnection?) {
+    Stick(
+        onDrag = { offset ->
+            val (x, y) = offset / 100f
+            fun Float.normalize() =
+                (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
+
+            conn?.mutateState {
+                setAxis(ControllerAxis.X, x.normalize())
+                setAxis(ControllerAxis.Y, y.normalize())
+            }
+        }, modifier = Modifier
+            .fillMaxHeight()
+            .width(200.dp)
+    ) {
+
+    }
+}
+
 
 @Composable
 fun StickScope.DraggableButton(
@@ -275,6 +288,20 @@ fun ServerConnectCard(conn: ServerConnection?, connectTo: ((String) -> Unit)?) {
             Button({
                 connectTo?.invoke(textFieldState.text.toString())
             }) { Text("Connetti") }
+        }
+    }
+}
+
+@Composable
+fun TrackpadModeToggle(state: MutableState<Boolean>) {
+    Card {
+        Row(
+            Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Checkbox(state.value, {state.value = it})
+            Text("Trackpad mode")
         }
     }
 }

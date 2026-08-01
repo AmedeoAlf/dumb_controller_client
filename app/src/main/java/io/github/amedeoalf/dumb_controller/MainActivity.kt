@@ -39,7 +39,10 @@ class MainActivity : ComponentActivity() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         val repeat = event == null || event.repeatCount != 0
         when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_DOWN -> if (!repeat) conn.value.mutateState { rt = 255.toByte() }
+            KeyEvent.KEYCODE_VOLUME_DOWN -> if (!repeat) conn.value.mutateState {
+                rt = 255.toByte()
+            }
+
             KeyEvent.KEYCODE_VOLUME_UP -> if (!repeat) conn.value.mutateState { lt = 255.toByte() }
             else -> return false
         }
