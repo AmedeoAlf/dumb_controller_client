@@ -145,7 +145,9 @@ fun ControllerScreen(
                     }
                     Spacer(Modifier.weight(1f))
                     RightSide(
-                        conn, Modifier
+                        conn = conn,
+                        trackpadMode = trackpadMode.value,
+                        modifier = Modifier
                             .fillMaxHeight()
                             .padding(5.dp)
                     )
@@ -300,7 +302,7 @@ fun TrackpadModeToggle(state: MutableState<Boolean>) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Checkbox(state.value, {state.value = it})
+            Checkbox(state.value, { state.value = it })
             Text("Trackpad mode")
         }
     }
@@ -357,15 +359,27 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
 }
 
 @Composable
-fun RightSide(conn: ServerConnection?, modifier: Modifier = Modifier) {
+fun RightSide(conn: ServerConnection?, trackpadMode: Boolean, modifier: Modifier = Modifier) {
     Stick(modifier = modifier, onDrag = {
-        val (x, y) = it / 100f
+        if (conn == null) return@Stick
         fun Float.normalize() = (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
-
-        conn?.mutateState {
-            setAxis(ControllerAxis.RX, x.normalize())
-            setAxis(ControllerAxis.RY, y.normalize())
+        if (trackpadMode) {
+            // TODO: check sensitivity and if we can detect a still finger
+            val (x, y) = it / 1000f
+            val currX = conn.state.axes[ControllerAxis.RX.ordinal].toFloat() / 0x7FFF
+            val currY = conn.state.axes[ControllerAxis.RY.ordinal].toFloat() / 0x7FFF
+            conn.mutateState {
+                setAxis(ControllerAxis.RX, (currX + x).normalize())
+                setAxis(ControllerAxis.RY, (currY + y).normalize())
+            }
+        } else {
+            val (x, y) = it / 100f
+            conn.mutateState {
+                setAxis(ControllerAxis.RX, x.normalize())
+                setAxis(ControllerAxis.RY, y.normalize())
+            }
         }
+
     }) {
         FaceButtons(conn, Modifier.heightIn(max = 300.dp))
     }
