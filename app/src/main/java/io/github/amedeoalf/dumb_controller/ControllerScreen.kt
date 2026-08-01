@@ -162,12 +162,10 @@ fun LeftStick(conn: ServerConnection?) {
     Stick(
         onDrag = { offset ->
             val (x, y) = offset / 100f
-            fun Float.normalize() =
-                (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
 
             conn?.mutateState {
-                setAxis(ControllerAxis.X, x.normalize())
-                setAxis(ControllerAxis.Y, y.normalize())
+                setAxis(ControllerAxis.X, x)
+                setAxis(ControllerAxis.Y, y)
             }
         }, modifier = Modifier
             .fillMaxHeight()
@@ -362,21 +360,21 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
 fun RightSide(conn: ServerConnection?, trackpadMode: Boolean, modifier: Modifier = Modifier) {
     Stick(modifier = modifier, onDrag = {
         if (conn == null) return@Stick
-        fun Float.normalize() = (Math.clamp(this, -1f, 1f) * 0x7FFF).toInt().toShort()
+
         if (trackpadMode) {
             // TODO: check sensitivity and if we can detect a still finger
             val (x, y) = it / 1000f
-            val currX = conn.state.axes[ControllerAxis.RX.ordinal].toFloat() / 0x7FFF
-            val currY = conn.state.axes[ControllerAxis.RY.ordinal].toFloat() / 0x7FFF
+            val currX = conn.state.axes[ControllerAxis.RX.ordinal]
+            val currY = conn.state.axes[ControllerAxis.RY.ordinal]
             conn.mutateState {
-                setAxis(ControllerAxis.RX, (currX + x).normalize())
-                setAxis(ControllerAxis.RY, (currY + y).normalize())
+                setAxis(ControllerAxis.RX, currX + x)
+                setAxis(ControllerAxis.RY, currY + y)
             }
         } else {
             val (x, y) = it / 100f
             conn.mutateState {
-                setAxis(ControllerAxis.RX, x.normalize())
-                setAxis(ControllerAxis.RY, y.normalize())
+                setAxis(ControllerAxis.RX, x)
+                setAxis(ControllerAxis.RY, y)
             }
         }
 

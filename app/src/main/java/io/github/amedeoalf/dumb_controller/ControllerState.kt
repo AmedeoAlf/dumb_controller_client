@@ -63,7 +63,7 @@ val AXIS_COUNT = ControllerAxis.entries.size
 
 data class ControllerState(
     var buttons: BitSet = BitSet(BUTTON_COUNT),
-    var axes: ShortArray = ShortArray(4),
+    var axes: FloatArray = FloatArray(4),
     var lt: Byte = 0,
     var rt: Byte = 0,
     var hatValue: HatValue = HatValue.MID
@@ -75,8 +75,8 @@ data class ControllerState(
         buttons[button.ordinal] = pressed
     }
 
-    fun setAxis(axis: ControllerAxis, value: Short) {
-        axes[axis.ordinal] = value
+    fun setAxis(axis: ControllerAxis, value: Float) {
+        axes[axis.ordinal] = value.coerceIn(-1f, 1f)
     }
 
 
@@ -92,7 +92,7 @@ data class ControllerState(
         stream.writeShort(buttons.toLongArray()[0].toInt())
 
         for (i in 0..<AXIS_COUNT) {
-            stream.writeShort(axes[i].toInt())
+            stream.writeShort((axes[i] * 0x7FFF).toInt())
         }
 
         stream.writeByte(lt.toInt())
