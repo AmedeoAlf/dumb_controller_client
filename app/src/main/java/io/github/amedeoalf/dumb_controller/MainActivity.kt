@@ -1,17 +1,23 @@
 package io.github.amedeoalf.dumb_controller
 
 import android.content.pm.ActivityInfo
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.NetworkInterface
 
 class MainActivity : ComponentActivity() {
     lateinit var conn: MutableState<ServerConnection>
@@ -20,18 +26,31 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
-        conn = mutableStateOf(
-            ServerConnection(
-                InetSocketAddress(
-                    "192.168.188.26", 8081
-                )
-            )
-        )
         setContent {
+            conn = remember {
+                mutableStateOf(
+                    ServerConnection(
+                        InetSocketAddress(
+                            "192.168.188.26", 8081
+                        )
+                    )
+                )
+            }
             ControllerScreen(conn.value) {
                 CoroutineScope(Dispatchers.IO).launch {
+                    conn.value.close()
                     conn.value = ServerConnection(InetSocketAddress(it, 8081))
                 }
+            }
+            LaunchedEffect(Unit) {
+                getBroadcastAddress().also {
+                    println("broadcast addr: $it")
+                }?.let { ServerConnection.connectWithBroadcast(it) }
+                    ?.let {
+                        val old = conn.value
+                        conn.value = it
+                        old.close()
+                    }
             }
         }
     }
@@ -56,5 +75,14 @@ class MainActivity : ComponentActivity() {
             else -> return false
         }
         return true
+    }
+
+    @Throws(IOException::class)
+    fun getBroadcastAddress(): InetAddress? {
+        return NetworkInterface.getNetworkInterfaces().asSequence()
+            .find { !it.isLoopback }
+            ?.interfaceAddresses
+            ?.find { it.broadcast != null }
+            ?.broadcast
     }
 }
