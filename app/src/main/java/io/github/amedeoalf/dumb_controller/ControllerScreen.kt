@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,8 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", showSystemUi = true)
 @Preview(
@@ -358,6 +361,20 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
 
 @Composable
 fun RightSide(conn: ServerConnection?, trackpadMode: Boolean, modifier: Modifier = Modifier) {
+    LaunchedEffect(trackpadMode) {
+        if (!trackpadMode || conn == null) return@LaunchedEffect
+        while (true) {
+            fun Float.reduceOrZero() = if (this < 0.05) 0f else this / 2
+            val currX = conn.state.axes[ControllerAxis.RX.ordinal]
+            val currY = conn.state.axes[ControllerAxis.RY.ordinal]
+            if (currX != 0f || currY != 0f)
+                conn.mutateState {
+                    setAxis(ControllerAxis.RX, currX.reduceOrZero())
+                    setAxis(ControllerAxis.RY, currY.reduceOrZero())
+                }
+            delay(10.milliseconds)
+        }
+    }
     Stick(modifier = modifier, onDrag = {
         if (conn == null) return@Stick
 
