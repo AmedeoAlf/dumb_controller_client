@@ -26,14 +26,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,8 +47,6 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.milliseconds
 
 @Preview(name = "Telefono", device = Devices.PHONE + ",orientation=landscape", showSystemUi = true)
 @Preview(
@@ -63,7 +59,6 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ControllerScreen(
     conn: ServerConnection? = null, connectTo: ((String) -> Unit)? = null
 ) {
-    val trackpadMode = remember { mutableStateOf(false) }
     DumbControllerTheme {
         Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
             Column(
@@ -77,7 +72,6 @@ fun ControllerScreen(
                     Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     ServerConnectCard(conn, connectTo)
-                    TrackpadModeToggle(trackpadMode)
                 }
                 Row(
                     Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -149,7 +143,6 @@ fun ControllerScreen(
                     Spacer(Modifier.weight(1f))
                     RightSide(
                         conn = conn,
-                        trackpadMode = trackpadMode.value,
                         modifier = Modifier
                             .fillMaxHeight()
                             .padding(5.dp)
@@ -296,20 +289,6 @@ fun ServerConnectCard(conn: ServerConnection?, connectTo: ((String) -> Unit)?) {
 }
 
 @Composable
-fun TrackpadModeToggle(state: MutableState<Boolean>) {
-    Card {
-        Row(
-            Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Checkbox(state.value, { state.value = it })
-            Text("Trackpad mode")
-        }
-    }
-}
-
-@Composable
 fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifier) {
 
     @Composable
@@ -360,41 +339,14 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
 }
 
 @Composable
-fun RightSide(conn: ServerConnection?, trackpadMode: Boolean, modifier: Modifier = Modifier) {
-    LaunchedEffect(trackpadMode) {
-        if (!trackpadMode || conn == null) return@LaunchedEffect
-        while (true) {
-            fun Float.reduceOrZero() = if (this < 0.05) 0f else this / 2
-            val currX = conn.state.axes[ControllerAxis.RX.ordinal]
-            val currY = conn.state.axes[ControllerAxis.RY.ordinal]
-            if (currX != 0f || currY != 0f)
-                conn.mutateState {
-                    setAxis(ControllerAxis.RX, currX.reduceOrZero())
-                    setAxis(ControllerAxis.RY, currY.reduceOrZero())
-                }
-            delay(10.milliseconds)
-        }
-    }
+fun RightSide(conn: ServerConnection?, modifier: Modifier = Modifier) {
     Stick(modifier = modifier, onDrag = {
         if (conn == null) return@Stick
-
-        if (trackpadMode) {
-            // TODO: check sensitivity and if we can detect a still finger
-            val (x, y) = it / 1000f
-            val currX = conn.state.axes[ControllerAxis.RX.ordinal]
-            val currY = conn.state.axes[ControllerAxis.RY.ordinal]
-            conn.mutateState {
-                setAxis(ControllerAxis.RX, currX + x)
-                setAxis(ControllerAxis.RY, currY + y)
-            }
-        } else {
-            val (x, y) = it / 100f
-            conn.mutateState {
-                setAxis(ControllerAxis.RX, x)
-                setAxis(ControllerAxis.RY, y)
-            }
+        val (x, y) = it / 100f
+        conn.mutateState {
+            setAxis(ControllerAxis.RX, x)
+            setAxis(ControllerAxis.RY, y)
         }
-
     }) {
         FaceButtons(conn, Modifier.heightIn(max = 300.dp))
     }
