@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import io.github.amedeoalf.dumb_controller.ui.theme.DumbControllerTheme
 
@@ -340,12 +341,22 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
 
 @Composable
 fun RightSide(conn: ServerConnection?, modifier: Modifier = Modifier) {
+    var lastOffset by remember { mutableStateOf(IntOffset(0, 0)) }
     Stick(modifier = modifier, onDrag = {
         if (conn == null) return@Stick
-        val (x, y) = it / 100f
+        val (xFloat, yFloat) = it / 100f
         conn.mutateState {
-            setAxis(ControllerAxis.RX, x)
-            setAxis(ControllerAxis.RY, y)
+            setAxis(ControllerAxis.RX, xFloat)
+            setAxis(ControllerAxis.RY, yFloat)
+
+            if (it == Offset.Zero) {
+                lastOffset = IntOffset.Zero
+            } else {
+                val offset = IntOffset(it.x.toInt(), it.y.toInt())
+                mouseOffset = offset - lastOffset
+                lastOffset = offset
+            }
+
         }
     }) {
         FaceButtons(conn, Modifier.heightIn(max = 300.dp))

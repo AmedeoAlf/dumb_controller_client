@@ -1,5 +1,6 @@
 package io.github.amedeoalf.dumb_controller
 
+import androidx.compose.ui.unit.IntOffset
 import java.io.DataOutputStream
 import java.util.BitSet
 
@@ -66,7 +67,10 @@ data class ControllerState(
     var axes: FloatArray = FloatArray(4),
     var lt: Byte = 0,
     var rt: Byte = 0,
-    var hatValue: HatValue = HatValue.MID
+    var hatValue: HatValue = HatValue.MID,
+    var mouseOffset: IntOffset = IntOffset.Zero,
+    var lmb: Boolean = false,
+    var rmb: Boolean = false,
 ) {
     var incremental: UInt = 0u
         private set
@@ -82,6 +86,7 @@ data class ControllerState(
 
     fun newSnapshot() {
         incremental += 1u
+        mouseOffset = IntOffset.Zero
     }
 
     fun serialize(stream: DataOutputStream) {
@@ -99,6 +104,11 @@ data class ControllerState(
         stream.writeByte(rt.toInt())
 
         stream.writeByte(hatValue.serialValue)
+
+        stream.writeShort(mouseOffset.x)
+        stream.writeShort(mouseOffset.y)
+
+        stream.writeByte(lmb.compareTo(false) shl 1 and rmb.compareTo(false))
     }
 
     override fun equals(other: Any?): Boolean {
