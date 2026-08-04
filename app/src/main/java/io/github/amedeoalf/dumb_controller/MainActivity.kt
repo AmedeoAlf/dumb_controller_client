@@ -1,13 +1,11 @@
 package io.github.amedeoalf.dumb_controller
 
 import android.content.pm.ActivityInfo
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +24,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
+        val reconnectTo: (ServerConnection) -> Unit = {
+            val old = conn.value
+            conn.value = it
+            old.close()
+        }
         setContent {
             conn = remember {
                 mutableStateOf(
@@ -36,22 +39,21 @@ class MainActivity : ComponentActivity() {
                     )
                 )
             }
-            ControllerScreen(conn.value) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    conn.value.close()
-                    conn.value = ServerConnection(InetSocketAddress(it, 8081))
-                }
-            }
-            LaunchedEffect(Unit) {
-                getBroadcastAddress().also {
-                    println("broadcast addr: $it")
-                }?.let { ServerConnection.connectWithBroadcast(it) }
-                    ?.let {
-                        val old = conn.value
-                        conn.value = it
-                        old.close()
+            ControllerScreen(
+                conn.value,
+                sync = {
+                    getBroadcastAddress().also {
+                        println("broadcast addr: $it")
+                    }?.let { ServerConnection.connectWithBroadcast(it) }
+                        ?.also {
+                            reconnectTo(it)
+                        }
+                },
+                connectTo = {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        reconnectTo(ServerConnection(InetSocketAddress(it, 8081)))
                     }
-            }
+                })
         }
     }
 
