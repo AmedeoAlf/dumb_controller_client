@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -66,6 +67,7 @@ fun ControllerScreen(
     connectTo: ((String) -> Unit)? = null,
     sync: (suspend () -> ServerConnection?)? = null,
 ) {
+    val trackpadMode = remember { mutableStateOf(false) }
     DumbControllerTheme {
         Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
             Column(
@@ -79,6 +81,7 @@ fun ControllerScreen(
                     Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     ServerConnectCard(conn, connectTo, sync)
+                    TrackpadToggle(trackpadMode)
                 }
                 Row(
                     Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -152,10 +155,21 @@ fun ControllerScreen(
                         conn = conn,
                         modifier = Modifier
                             .fillMaxHeight()
-                            .padding(5.dp)
+                            .padding(5.dp),
+                        trackpadMode = trackpadMode
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TrackpadToggle(state: MutableState<Boolean>) {
+    Card {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Trackpad mode")
+            Checkbox(state.value, { state.value = it })
         }
     }
 }
@@ -314,7 +328,11 @@ fun ServerConnectCard(
 }
 
 @Composable
-fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifier) {
+fun StickScope.FaceButtons(
+    conn: ServerConnection?,
+    trackpadMode: Boolean,
+    modifier: Modifier = Modifier
+) {
 
     @Composable
     fun PrimaryBtn(name: String, btn: ControllerButton) = DraggableButton(
@@ -339,6 +357,18 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
         conn?.mutateState { setButton(btn, it) }
     }
 
+    @Composable
+    fun SecondaryMouseBtn(left: Boolean) = DraggableButton(
+        if (left) "LMB" else "RMB",
+        Modifier
+            .padding(10.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.secondary),
+        MaterialTheme.colorScheme.onSecondary
+    ) {
+        conn?.mutateState { if (left) lmb = it else rmb = it }
+    }
+
     LazyHorizontalGrid(
         rows = GridCells.Fixed(3),
         modifier = modifier,
@@ -348,7 +378,7 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
     ) {
         item { SecondaryBtn(ControllerButton.LB) }
         item { PrimaryBtn("X", ControllerButton.WEST) }
-        item { SecondaryBtn(ControllerButton.LS) }
+        item { if (trackpadMode) SecondaryMouseBtn(true) else SecondaryBtn(ControllerButton.LS) }
         item { PrimaryBtn("Y", ControllerButton.NORTH) }
         item {
             Box(
@@ -358,31 +388,33 @@ fun StickScope.FaceButtons(conn: ServerConnection?, modifier: Modifier = Modifie
         item { PrimaryBtn("A", ControllerButton.SOUTH) }
         item { SecondaryBtn(ControllerButton.RB) }
         item { PrimaryBtn("B", ControllerButton.EAST) }
-        item { SecondaryBtn(ControllerButton.RS) }
+        item { if (trackpadMode) SecondaryMouseBtn(false) else SecondaryBtn(ControllerButton.RS) }
     }
 
 }
 
 @Composable
-fun RightSide(conn: ServerConnection?, modifier: Modifier = Modifier) {
+fun RightSide(conn: ServerConnection?, trackpadMode: MutableState<Boolean>, modifier: Modifier = Modifier) {
     var lastOffset by remember { mutableStateOf(IntOffset(0, 0)) }
     Stick(modifier = modifier, onDrag = {
         if (conn == null) return@Stick
-        val (xFloat, yFloat) = it / 100f
-        conn.mutateState {
-            setAxis(ControllerAxis.RX, xFloat)
-            setAxis(ControllerAxis.RY, yFloat)
-
-            if (it == Offset.Zero) {
-                lastOffset = IntOffset.Zero
-            } else {
-                val offset = IntOffset(it.x.toInt(), it.y.toInt())
-                mouseOffset = offset - lastOffset
-                lastOffset = offset
+        if (trackpadMode.value)
+            conn.mutateState {
+                if (it == Offset.Zero) {
+                    lastOffset = IntOffset.Zero
+                } else {
+                    val offset = IntOffset(it.x.toInt(), it.y.toInt())
+                    mouseOffset = offset - lastOffset
+                    lastOffset = offset
+                }
             }
-
-        }
+        else
+            conn.mutateState {
+                val (xFloat, yFloat) = it / 100f
+                setAxis(ControllerAxis.RX, xFloat)
+                setAxis(ControllerAxis.RY, yFloat)
+            }
     }) {
-        FaceButtons(conn, Modifier.heightIn(max = 300.dp))
+        FaceButtons(conn, trackpadMode.value, Modifier.heightIn(max = 300.dp))
     }
 }
