@@ -108,7 +108,7 @@ data class ControllerState(
         stream.writeShort(mouseOffset.x)
         stream.writeShort(mouseOffset.y)
 
-        stream.writeByte(lmb.compareTo(false) shl 1 and rmb.compareTo(false))
+        stream.writeByte(rmb.compareTo(false) shl 1 or lmb.compareTo(false))
     }
 
     override fun equals(other: Any?): Boolean {
