@@ -18,7 +18,7 @@ import java.net.InetSocketAddress
 import java.net.NetworkInterface
 
 class MainActivity : ComponentActivity() {
-    lateinit var conn: MutableState<ServerConnection>
+    lateinit var conn: MutableState<ServerConnection?>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,18 +27,10 @@ class MainActivity : ComponentActivity() {
         val reconnectTo: (ServerConnection) -> Unit = {
             val old = conn.value
             conn.value = it
-            old.close()
+            old?.close()
         }
         setContent {
-            conn = remember {
-                mutableStateOf(
-                    ServerConnection(
-                        InetSocketAddress(
-                            "192.168.188.26", 8081
-                        )
-                    )
-                )
-            }
+            conn = remember { mutableStateOf(null) }
             ControllerScreen(
                 conn.value,
                 sync = {
@@ -60,11 +52,11 @@ class MainActivity : ComponentActivity() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         val repeat = event == null || event.repeatCount != 0
         when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_DOWN -> if (!repeat) conn.value.mutateState {
+            KeyEvent.KEYCODE_VOLUME_DOWN -> if (!repeat) conn.value?.mutateState {
                 rt = 255.toByte()
             }
 
-            KeyEvent.KEYCODE_VOLUME_UP -> if (!repeat) conn.value.mutateState { lt = 255.toByte() }
+            KeyEvent.KEYCODE_VOLUME_UP -> if (!repeat) conn.value?.mutateState { lt = 255.toByte() }
             else -> return false
         }
         return true
@@ -72,8 +64,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_DOWN -> conn.value.mutateState { rt = 0.toByte() }
-            KeyEvent.KEYCODE_VOLUME_UP -> conn.value.mutateState { lt = 0.toByte() }
+            KeyEvent.KEYCODE_VOLUME_DOWN -> conn.value?.mutateState { rt = 0.toByte() }
+            KeyEvent.KEYCODE_VOLUME_UP -> conn.value?.mutateState { lt = 0.toByte() }
             else -> return false
         }
         return true
